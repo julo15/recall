@@ -2,18 +2,27 @@
 
 Semantic search CLI for AI agent conversation history. Searches across Claude, Codex, and Gemini sessions using local embeddings.
 
-## Quick Reference
+## Prerequisites
+
+- Python 3.10+
+- Agent history files from at least one supported agent (Claude, Codex, or Gemini)
+
+## Install
 
 ```bash
-# Install (editable)
 pip install -e .
+```
 
-# Usage
+On first search, the index is built automatically (~30s depending on history size). The embedding model (`all-MiniLM-L6-v2`, ~80 MB) is downloaded on first run.
+
+## Usage
+
+```bash
 recall "some natural language query"
 recall --agent claude "auth bug"
 recall --since 2026-03-01 "notification batching"
 recall --limit 10 "profile image"
-recall --reindex
+recall --reindex                        # Force full reindex
 ```
 
 ## Architecture
