@@ -50,6 +50,7 @@ class CodexAdapter:
                 entries.append(
                     HistoryEntry(
                         text=text,
+                        role="user",
                         agent="codex",
                         session_id=data.get("session_id", ""),
                         project="",

@@ -8,6 +8,7 @@ import json
 @dataclass
 class HistoryEntry:
     text: str
+    role: str
     agent: str
     session_id: str
     project: str
@@ -18,7 +19,9 @@ class HistoryEntry:
 
     @classmethod
     def from_json(cls, line: str) -> HistoryEntry:
-        return cls(**json.loads(line))
+        data = json.loads(line)
+        data.setdefault("role", "user")
+        return cls(**data)
 
 
 @runtime_checkable

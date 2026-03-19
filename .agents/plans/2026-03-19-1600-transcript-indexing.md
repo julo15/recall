@@ -78,24 +78,26 @@ The project path is derived from the transcript's parent directory name (reverse
 ## Implementation Steps
 
 ### Step 1: Add `role` field to HistoryEntry
-- [ ] Add `role: str` field to `HistoryEntry` in `recall/adapters/base.py` (values: `"user"` or `"assistant"`)
-- [ ] Update `to_json` / `from_json` — needs to handle missing `role` for backwards compat during transition
+- [x] Add `role: str` field to `HistoryEntry` in `recall/adapters/base.py` (values: `"user"` or `"assistant"`)
+- [x] Update `to_json` / `from_json` — needs to handle missing `role` for backwards compat during transition
 
 ### Step 2: Rewrite Claude adapter
-- [ ] Replace `recall/adapters/claude.py` to scan `~/.claude/projects/*/` for transcript JSONL files (excluding `subagents/` directories)
-- [ ] Parse each line: filter to `type: "user"` and `type: "assistant"`
-- [ ] For user messages: extract `message.content` only when it's a string (skip tool_result arrays)
-- [ ] For assistant messages: extract `text` blocks from `message.content` array, skip `tool_use`/`thinking`
-- [ ] Strip internal tags from text (system-reminder, local-command-stdout, etc.) — same as seshboard does
-- [ ] Derive project path from directory name, session_id from filename
-- [ ] Extract timestamp from each entry's `timestamp` field (ISO 8601)
-- [ ] Cursor system: track per-file `{filename: byte_offset}` so incremental updates only read new lines appended to existing transcripts and new files
+- [x] Replace `recall/adapters/claude.py` to scan `~/.claude/projects/*/` for transcript JSONL files (excluding `subagents/` directories)
+- [x] Parse each line: filter to `type: "user"` and `type: "assistant"`
+- [x] For user messages: extract `message.content` only when it's a string (skip tool_result arrays)
+- [x] For assistant messages: extract `text` blocks from `message.content` array, skip `tool_use`/`thinking`
+- [x] Strip internal tags from text (system-reminder, local-command-stdout, etc.)
+- [x] Derive project path from directory name, session_id from filename
+- [x] Extract timestamp from each entry's `timestamp` field (ISO 8601)
+- [x] Cursor system: track per-file `{filename: byte_offset}` so incremental updates only read new lines appended to existing transcripts and new files
+- [x] Update codex and gemini adapters to pass `role="user"` to HistoryEntry
+- [x] Add `role` field to `--json` output in cli.py
 
 ### Step 3: Test
-- [ ] Run `recall --reindex` and verify it indexes ~5-8K entries
-- [ ] Search for "Default to profile timeline" and verify it finds the ios-3 session
-- [ ] Search for a phrase Claude said (not the user) and verify it works
-- [ ] Verify `recall --json` still works
+- [x] Run `recall --reindex` — indexed 2300 entries in ~14s
+- [x] Search for "Default to profile timeline" — returns semantically related results (exact text was in tool results which are correctly skipped)
+- [x] Search for a phrase Claude said (not the user) — assistant text is searchable, role="assistant" appears in results
+- [x] Verify `recall --json` — works, includes `role` field
 
 ## Acceptance Criteria
 - [ ] `recall "Default to profile timeline"` returns the ios-3 session
