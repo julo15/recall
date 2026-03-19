@@ -4,7 +4,7 @@ import json
 import os
 import re
 import sys
-from datetime import datetime, timezone
+from datetime import datetime
 from pathlib import Path
 
 from recall.adapters.base import Adapter, HistoryEntry
@@ -12,7 +12,16 @@ from recall.adapters.base import Adapter, HistoryEntry
 
 # Regex to strip internal tags like <system-reminder>...</system-reminder>,
 # <local-command-stdout>...</local-command-stdout>, etc.
-_TAG_RE = re.compile(r"<(?:system-reminder|local-command-stdout|local-command-caveat|command-name|command-message|command-args|available-deferred-tools|antml:thinking|antml:thinking_mode|antml:reasoning_effort)[^>]*>[\s\S]*?</(?:system-reminder|local-command-stdout|local-command-caveat|command-name|command-message|command-args|available-deferred-tools|antml:thinking|antml:thinking_mode|antml:reasoning_effort)>", re.DOTALL)
+_STRIP_TAGS = [
+    "system-reminder", "local-command-stdout", "local-command-caveat",
+    "command-name", "command-message", "command-args",
+    "available-deferred-tools", "antml:thinking", "antml:thinking_mode",
+    "antml:reasoning_effort",
+]
+_TAG_RE = re.compile(
+    r"<(?:" + "|".join(_STRIP_TAGS) + r")[^>]*>[\s\S]*?</(?:" + "|".join(_STRIP_TAGS) + r")>",
+    re.DOTALL,
+)
 
 
 def _strip_tags(text: str) -> str:
@@ -88,6 +97,12 @@ class ClaudeAdapter:
 
     def load(self, cursor: dict | None) -> tuple[list[HistoryEntry], dict]:
         file_cursors = dict(cursor or {})
+        if "offset" in file_cursors:
+            print(
+                "warning: old index format detected. Run 'recall --reindex' for best results.",
+                file=sys.stderr,
+            )
+            file_cursors = {}
         entries: list[HistoryEntry] = []
 
         for transcript_path in self._find_transcript_files():

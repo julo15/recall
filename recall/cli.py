@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
 from datetime import datetime, timezone
 
@@ -69,7 +70,6 @@ def _highlight(snippet: str, query: str, bold: str, reset: str) -> str:
     words = [w for w in query.lower().split() if len(w) >= 3]
     if not words:
         return snippet
-    import re
     pattern = re.compile("(" + "|".join(re.escape(w) for w in words) + ")", re.IGNORECASE)
     return pattern.sub(f"{bold}\\1{reset}", snippet)
 
