@@ -7,18 +7,38 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 MIN_PYTHON_VERSION="3.10"
 
 # Find a suitable Python 3.10+
+check_python() {
+  local cmd="$1"
+  version=$("$cmd" -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')" 2>/dev/null) || return 1
+  major="${version%%.*}"
+  minor="${version#*.}"
+  if [ "$major" -ge 3 ] && [ "$minor" -ge 10 ]; then
+    echo "$cmd"
+    return 0
+  fi
+  return 1
+}
+
 find_python() {
+  # Check PATH first (works for brew, system python, etc.)
   for cmd in python3 python; do
-    if command -v "$cmd" >/dev/null 2>&1; then
-      version=$("$cmd" -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')" 2>/dev/null) || continue
-      major="${version%%.*}"
-      minor="${version#*.}"
-      if [ "$major" -ge 3 ] && [ "$minor" -ge 10 ]; then
-        command -v "$cmd"
-        return 0
-      fi
+    if check_python "$cmd" 2>/dev/null; then return 0; fi
+  done
+
+  # Check version managers (asdf, pyenv) directly, bypassing shims
+  for dir in "$HOME/.asdf/installs/python"/*/bin "$HOME/.pyenv/versions"/*/bin; do
+    if [ -x "$dir/python3" ]; then
+      if check_python "$dir/python3" 2>/dev/null; then return 0; fi
     fi
   done
+
+  # Check common system locations
+  for cmd in /usr/local/bin/python3 /opt/homebrew/bin/python3 /usr/bin/python3; do
+    if [ -x "$cmd" ]; then
+      if check_python "$cmd" 2>/dev/null; then return 0; fi
+    fi
+  done
+
   return 1
 }
 
