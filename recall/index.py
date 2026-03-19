@@ -5,23 +5,16 @@ import os
 from pathlib import Path
 
 import numpy as np
-from tqdm import tqdm
 
 from recall.adapters import ALL_ADAPTERS
 from recall.adapters.base import HistoryEntry
+from recall.embedding import encode
 
 
 INDEX_DIR = Path(os.path.expanduser("~/.recall"))
 EMBEDDINGS_PATH = INDEX_DIR / "embeddings.npy"
 METADATA_PATH = INDEX_DIR / "metadata.jsonl"
 CURSORS_PATH = INDEX_DIR / "cursors.json"
-
-
-def _get_model():
-    """Lazy-load the sentence transformer model."""
-    from sentence_transformers import SentenceTransformer
-
-    return SentenceTransformer("all-MiniLM-L6-v2")
 
 
 def load_cursors() -> dict:
@@ -88,15 +81,13 @@ def build_index(force: bool = False) -> tuple[np.ndarray, list[HistoryEntry]]:
 
     # Embed new entries
     if all_new:
-        model = _get_model()
         texts = [e.text for e in all_new]
         print(f"Indexing {len(texts)} new entries...")
-        new_emb = model.encode(
+        new_emb = encode(
             texts,
             show_progress_bar=len(texts) > 50,
             batch_size=64,
         )
-        new_emb = np.array(new_emb, dtype=np.float32)
     else:
         new_emb = np.empty((0, 384), dtype=np.float32)
 

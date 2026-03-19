@@ -6,6 +6,7 @@ from datetime import datetime
 import numpy as np
 
 from recall.adapters.base import HistoryEntry
+from recall.embedding import encode
 
 
 @dataclass
@@ -34,14 +35,11 @@ def search(
     since: float | None = None,
 ) -> list[SearchResult]:
     """Search the index for entries matching the query."""
-    from sentence_transformers import SentenceTransformer
-
     if len(embeddings) == 0 or len(metadata) == 0:
         return []
 
-    model = SentenceTransformer("all-MiniLM-L6-v2")
-    query_emb = model.encode([query], normalize_embeddings=False)
-    query_vec = np.array(query_emb, dtype=np.float32)[0]
+    query_emb = encode([query])
+    query_vec = query_emb[0]
 
     # Cosine similarity
     norms = np.linalg.norm(embeddings, axis=1)
