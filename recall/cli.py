@@ -26,12 +26,52 @@ def _format_project(project: str) -> str:
     return project
 
 
-def _truncate(text: str, max_len: int = 120) -> str:
-    # Collapse whitespace and truncate
+def _snippet(text: str, query: str, max_len: int = 120) -> str:
+    """Show a snippet centered around the best query word match, or the start if no match."""
     text = " ".join(text.split())
     if len(text) <= max_len:
         return text
-    return text[: max_len - 3] + "..."
+
+    # Find the earliest position of any query word (case-insensitive)
+    text_lower = text.lower()
+    query_words = [w for w in query.lower().split() if len(w) >= 3]
+    best_pos = -1
+    for word in query_words:
+        pos = text_lower.find(word)
+        if pos != -1 and (best_pos == -1 or pos < best_pos):
+            best_pos = pos
+
+    if best_pos == -1:
+        # No keyword match — show start
+        return text[: max_len - 3] + "..."
+
+    # Center the window around the match
+    half = max_len // 2
+    start = max(0, best_pos - half)
+    end = start + max_len
+
+    if end > len(text):
+        end = len(text)
+        start = max(0, end - max_len)
+
+    snippet = text[start:end]
+    if start > 0:
+        snippet = "..." + snippet[3:]
+    if end < len(text):
+        snippet = snippet[: -3] + "..."
+    return snippet
+
+
+def _highlight(snippet: str, query: str, bold: str, reset: str) -> str:
+    """Bold query words found in the snippet."""
+    if not bold:
+        return snippet
+    words = [w for w in query.lower().split() if len(w) >= 3]
+    if not words:
+        return snippet
+    import re
+    pattern = re.compile("(" + "|".join(re.escape(w) for w in words) + ")", re.IGNORECASE)
+    return pattern.sub(f"{bold}\\1{reset}", snippet)
 
 
 def main():
@@ -140,17 +180,27 @@ def main():
         print("No matching sessions found.")
         sys.exit(0)
 
+    use_color = sys.stdout.isatty()
+    RESET = "\033[0m" if use_color else ""
+    DIM = "\033[2m" if use_color else ""
+    CYAN = "\033[36m" if use_color else ""
+    YELLOW = "\033[33m" if use_color else ""
+    BOLD = "\033[1m" if use_color else ""
+
     for i, r in enumerate(results, 1):
         project_str = _format_project(r.entry.project)
         date_str = _format_timestamp(r.entry.timestamp)
-        snippet = _truncate(r.entry.text)
+        snippet = _snippet(r.entry.text, query)
+        role_color = YELLOW if r.entry.role == "assistant" else CYAN
+        role_label = "bot" if r.entry.role == "assistant" else "you"
 
         print(f"\n  {i}. [{r.entry.agent}] {date_str}", end="")
         if project_str:
             print(f"  ({project_str})", end="")
         print(f"  score={r.score:.3f}")
-        print(f"     {snippet}")
-        print(f"     > {r.resume_cmd}")
+        highlighted = _highlight(snippet, query, BOLD, RESET)
+        print(f"     {role_color}[{role_label}]{RESET} {highlighted}")
+        print(f"     {DIM}> {r.resume_cmd}{RESET}")
 
     print()
 
