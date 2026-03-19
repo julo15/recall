@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 import sys
 from datetime import datetime, timezone
 
@@ -53,6 +54,10 @@ def main():
     parser.add_argument(
         "--since", type=str, help="Only show results since date (YYYY-MM-DD)"
     )
+    parser.add_argument(
+        "--json", action="store_true", dest="json_output",
+        help="Output results as JSON array",
+    )
 
     args = parser.parse_args()
 
@@ -68,11 +73,14 @@ def main():
             print(f"error: invalid date format '{args.since}', use YYYY-MM-DD", file=sys.stderr)
             sys.exit(1)
 
+    # In JSON mode, send status messages to stderr
+    log = sys.stderr if args.json_output else sys.stdout
+
     # Reindex
     if args.reindex:
-        print("Rebuilding index from scratch...")
+        print("Rebuilding index from scratch...", file=log)
         build_index(force=True)
-        print("Done.")
+        print("Done.", file=log)
         if not args.query:
             return
 
@@ -83,14 +91,16 @@ def main():
 
     # Ensure index exists
     if not EMBEDDINGS_PATH.exists():
-        print("Building index for the first time...")
+        print("Building index for the first time...", file=log)
         build_index(force=False)
 
     embeddings = load_embeddings()
     metadata = load_metadata()
 
     if embeddings is None or len(metadata) == 0:
-        print("No entries indexed. Check that agent history files exist.")
+        print("No entries indexed. Check that agent history files exist.", file=log)
+        if args.json_output:
+            print("[]")
         sys.exit(1)
 
     # Incremental update
@@ -104,6 +114,21 @@ def main():
         agent_filter=args.agent,
         since=since_ts,
     )
+
+    if args.json_output:
+        print(json.dumps([
+            {
+                "agent": r.entry.agent,
+                "session_id": r.entry.session_id,
+                "project": r.entry.project,
+                "timestamp": r.entry.timestamp,
+                "score": round(r.score, 4),
+                "resume_cmd": r.resume_cmd,
+                "text": r.entry.text,
+            }
+            for r in results
+        ]))
+        return
 
     if not results:
         print("No matching sessions found.")
