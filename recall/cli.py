@@ -119,6 +119,7 @@ def main():
         print(json.dumps([
             {
                 "agent": r.entry.agent,
+                "role": r.entry.role,
                 "session_id": r.entry.session_id,
                 "project": r.entry.project,
                 "timestamp": r.entry.timestamp,
