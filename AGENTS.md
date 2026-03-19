@@ -34,7 +34,7 @@ recall/
 ├── index.py            # Build/update index, persist to ~/.recall/
 └── adapters/
     ├── base.py         # HistoryEntry dataclass + Adapter protocol
-    ├── claude.py       # ~/.claude/history.jsonl (JSONL, byte-offset cursor)
+    ├── claude.py       # ~/.claude/projects/*/*.jsonl (transcript JSONL, per-file byte-offset cursors)
     ├── codex.py        # ~/.codex/history.jsonl (JSONL, byte-offset cursor)
     └── gemini.py       # ~/.gemini/tmp/*/logs.json (JSON arrays, seen-set cursor)
 ```
@@ -42,7 +42,7 @@ recall/
 ## Key Design Decisions
 
 - **Local embeddings only** — `sentence-transformers/all-MiniLM-L6-v2` (384-dim). No API keys, works offline.
-- **Prompt-level indexing** — indexes user prompts, not full conversations. Keeps index small and prompts are the best signal.
+- **Transcript-level indexing** — indexes user prompts and assistant responses from full conversation transcripts. Provides comprehensive search across all conversation content.
 - **Incremental indexing** — each adapter tracks a cursor. Only new entries are embedded on each run.
 - **No vector DB** — numpy array + cosine similarity. Sufficient for <100K entries.
 
@@ -68,12 +68,12 @@ recall/
 
 | Agent | Index File | Format | Prompt Field | Cursor Strategy |
 |-------|-----------|--------|-------------|----------------|
-| Claude | `~/.claude/history.jsonl` | JSONL | `display` | byte offset |
+| Claude | `~/.claude/projects/*/*.jsonl` | JSONL | `message.content` (user + assistant) | per-file byte offset |
 | Codex | `~/.codex/history.jsonl` | JSONL | `text` | byte offset |
 | Gemini | `~/.gemini/tmp/*/logs.json` | JSON array | `message` (type=user) | seen (sessionId, messageId) set |
 
 ## Dependencies
 
-- `sentence-transformers` — embedding model
+- `onnxruntime` + `tokenizers` — embedding model
 - `numpy` — vector storage and similarity
 - `tqdm` — progress bar during indexing
