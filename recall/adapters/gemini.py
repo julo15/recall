@@ -79,6 +79,7 @@ class GeminiAdapter:
                 entries.append(
                     HistoryEntry(
                         text=text,
+                        role="user",
                         agent="gemini",
                         session_id=session_id,
                         project=project,
