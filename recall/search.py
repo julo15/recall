@@ -16,14 +16,22 @@ class SearchResult:
     resume_cmd: str
 
 
-def _resume_command(entry: HistoryEntry) -> str:
+def _resume_command(entry: HistoryEntry, *, skip_permissions: bool = False) -> str:
     if entry.agent == "claude":
-        return f"claude --resume {entry.session_id}"
+        cmd = f"claude --resume {entry.session_id}"
+        if skip_permissions:
+            cmd += " --dangerously-skip-permissions"
     elif entry.agent == "codex":
-        return f"codex --resume {entry.session_id}"
+        cmd = f"codex --resume {entry.session_id}"
     elif entry.agent == "gemini":
-        return "gemini"
-    return ""
+        cmd = "gemini"
+    else:
+        return ""
+
+    if entry.project:
+        cmd = f"cd {entry.project} && {cmd}"
+
+    return cmd
 
 
 def search(
@@ -33,6 +41,7 @@ def search(
     limit: int = 5,
     agent_filter: str | None = None,
     since: float | None = None,
+    skip_permissions: bool = False,
 ) -> list[SearchResult]:
     """Search the index for entries matching the query."""
     if len(embeddings) == 0 or len(metadata) == 0:
@@ -82,7 +91,7 @@ def search(
             SearchResult(
                 entry=entry,
                 score=score,
-                resume_cmd=_resume_command(entry),
+                resume_cmd=_resume_command(entry, skip_permissions=skip_permissions),
             )
         )
 

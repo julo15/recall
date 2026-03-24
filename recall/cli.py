@@ -58,6 +58,10 @@ def main():
         "--json", action="store_true", dest="json_output",
         help="Output results as JSON array",
     )
+    parser.add_argument(
+        "--skip-permissions", "-S", action="store_true",
+        help="Add --dangerously-skip-permissions to Claude resume commands",
+    )
 
     args = parser.parse_args()
 
@@ -113,6 +117,7 @@ def main():
         limit=args.limit,
         agent_filter=args.agent,
         since=since_ts,
+        skip_permissions=args.skip_permissions,
     )
 
     if args.json_output:
