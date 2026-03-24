@@ -193,8 +193,8 @@ def main():
         if project_str:
             print(f"  ({project_str})", end="")
         print(f"  score={r.score:.3f}")
-        highlighted = _highlight(snippet, query, BOLD, RESET)
-        print(f"     {role_color}[{role_label}]{RESET} {highlighted}")
+        highlighted = _highlight(snippet, query, BOLD, DIM)
+        print(f"     {role_color}[{role_label}]{RESET} {DIM}{highlighted}{RESET}")
         print(f"     {DIM}> {r.resume_cmd}{RESET}")
 
     print()
