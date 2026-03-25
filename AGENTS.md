@@ -72,6 +72,31 @@ recall/
 | Codex | `~/.codex/history.jsonl` | JSONL | `text` | byte offset |
 | Gemini | `~/.gemini/tmp/*/logs.json` | JSON array | `message` (type=user) | seen (sessionId, messageId) set |
 
+## JSON API Contract
+
+Seshctl and other tools integrate with recall via `recall --json`. This is a stable contract — field names and types must not change without coordinating with consumers.
+
+**Invocation**: `recall --json [-n LIMIT] [--agent AGENT] [--since DATE] "query"`
+
+**Output**: JSON array on stdout. Status messages go to stderr.
+
+**Schema** (each array element):
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `agent` | string | Source agent: `"claude"`, `"codex"`, or `"gemini"` |
+| `role` | string | `"user"` or `"assistant"` |
+| `session_id` | string | Session UUID (matches `conversation_id` in seshctl's DB) |
+| `project` | string | Project directory path |
+| `timestamp` | float | Unix timestamp of the matched entry |
+| `score` | float | Cosine similarity score (0.0–1.0) |
+| `resume_cmd` | string | Shell command to resume the session (includes `cd` into project dir) |
+| `text` | string | The matched text content |
+
+**Empty results**: `[]`
+
+**Error**: Non-zero exit code. Stderr may contain error messages.
+
 ## Dependencies
 
 - `onnxruntime` + `tokenizers` — embedding model
