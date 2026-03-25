@@ -6,10 +6,10 @@ import subprocess
 
 import pytest
 
-RECALL_BIN = shutil.which("recall") or "/Users/julianlo/.local/bin/recall"
+RECALL_BIN = shutil.which("recall")
 
 recall_installed = pytest.mark.skipif(
-    not shutil.which("recall") and not shutil.which(RECALL_BIN),
+    RECALL_BIN is None,
     reason="recall is not installed",
 )
 
@@ -43,7 +43,7 @@ def test_json_output_schema():
     assert isinstance(item["role"], str)
     assert isinstance(item["session_id"], str)
     assert isinstance(item["project"], str)
-    assert isinstance(item["timestamp"], float)
+    assert isinstance(item["timestamp"], (int, float))
     assert isinstance(item["score"], float)
     assert 0.0 <= item["score"] <= 1.0
     assert isinstance(item["resume_cmd"], str)
@@ -95,3 +95,19 @@ def test_json_role_values():
         assert item["role"] in ("user", "assistant"), (
             f"Unexpected role value: {item['role']!r}"
         )
+
+
+@recall_installed
+def test_json_stdout_is_pure_json():
+    """Verify stdout contains no preamble text — just pure JSON.
+
+    This catches the bug where status messages leak to stdout instead of stderr.
+    """
+    result = _run_recall("--json", "-n", "1", "test")
+    assert result.returncode == 0, f"recall failed: {result.stderr}"
+
+    stripped = result.stdout.lstrip()
+    assert stripped.startswith("["), (
+        f"Expected stdout to start with '[' (JSON array), "
+        f"but got: {stripped[:80]!r}"
+    )

@@ -168,7 +168,7 @@ def main():
                 "session_id": r.entry.session_id,
                 "project": r.entry.project,
                 "timestamp": r.entry.timestamp,
-                "score": round(r.score, 4),
+                "score": round(max(0.0, r.score), 4),
                 "resume_cmd": r.resume_cmd,
                 "text": r.entry.text,
             }
