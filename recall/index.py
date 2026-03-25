@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import os
+import sys
 from pathlib import Path
 
 import numpy as np
@@ -82,7 +83,7 @@ def build_index(force: bool = False) -> tuple[np.ndarray, list[HistoryEntry]]:
     # Embed new entries
     if all_new:
         texts = [e.text for e in all_new]
-        print(f"Indexing {len(texts)} new entries...")
+        print(f"Indexing {len(texts)} new entries...", file=sys.stderr)
         new_emb = encode(
             texts,
             show_progress_bar=len(texts) > 50,
