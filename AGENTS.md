@@ -10,7 +10,7 @@ Semantic search CLI for AI agent conversation history. Searches across Claude, C
 ## Install
 
 ```bash
-pip install -e .
+./install.sh
 ```
 
 On first search, the index is built automatically (~30s depending on history size). The embedding model (`all-MiniLM-L6-v2`, ~80 MB) is downloaded on first run.

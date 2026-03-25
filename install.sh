@@ -66,6 +66,18 @@ echo "Installing recall..."
 mkdir -p "$BIN_DIR"
 ln -sf "$VENV_DIR/bin/recall" "$BIN_DIR/recall"
 
+# Clean up conflicting installs (e.g. asdf shims from a previous pip install)
+if [ -f "$HOME/.asdf/shims/recall" ]; then
+  echo "Removing conflicting asdf shim..."
+  # Uninstall from asdf's Python if present
+  for pip in "$HOME/.asdf/installs/python"/*/bin/pip; do
+    if [ -x "$pip" ]; then
+      "$pip" uninstall -y recall 2>/dev/null || true
+    fi
+  done
+  asdf reshim python 2>/dev/null || true
+fi
+
 # Check if BIN_DIR is on PATH
 if ! echo "$PATH" | tr ':' '\n' | grep -qx "$BIN_DIR"; then
   echo ""
