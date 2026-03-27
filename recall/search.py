@@ -28,9 +28,6 @@ def _resume_command(entry: HistoryEntry, *, skip_permissions: bool = False) -> s
     else:
         return ""
 
-    if entry.project:
-        cmd = f"cd {entry.project} && {cmd}"
-
     return cmd
 
 
