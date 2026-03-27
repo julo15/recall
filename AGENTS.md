@@ -90,7 +90,7 @@ Seshctl and other tools integrate with recall via `recall --json`. This is a sta
 | `project` | string | Project directory path |
 | `timestamp` | float | Unix timestamp of the matched entry |
 | `score` | float | Cosine similarity score (0.0–1.0) |
-| `resume_cmd` | string | Shell command to resume the session (includes `cd` into project dir if known) |
+| `resume_cmd` | string | Bare shell command to resume the session (without `cd` prefix; use `entry.project` to reconstruct the full command if needed) |
 | `text` | string | The matched text content |
 
 **Empty results**: `[]`
