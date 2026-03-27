@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import json
 import re
+import shlex
 import sys
 from datetime import datetime, timezone
 
@@ -201,7 +202,7 @@ def main():
         highlighted = _highlight(snippet, query, BOLD, DIM)
         print(f"     {role_color}[{role_label}]{RESET} {DIM}{highlighted}{RESET}")
         if r.entry.project:
-            display_cmd = f"cd {r.entry.project} && {r.resume_cmd}"
+            display_cmd = f"cd {shlex.quote(r.entry.project)} && {r.resume_cmd}"
         else:
             display_cmd = r.resume_cmd
         print(f"     {DIM}> {display_cmd}{RESET}")
