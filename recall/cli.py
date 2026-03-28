@@ -124,7 +124,7 @@ def main():
     # Reindex
     if args.reindex:
         print("Rebuilding index from scratch...", file=log)
-        build_index(force=True)
+        build_index(force=True, json_status=args.json_output)
         print("Done.", file=log)
         if not args.query:
             return
@@ -137,7 +137,7 @@ def main():
     # Ensure index exists
     if not EMBEDDINGS_PATH.exists():
         print("Building index for the first time...", file=log)
-        build_index(force=False)
+        build_index(force=False, json_status=args.json_output)
 
     embeddings = load_embeddings()
     metadata = load_metadata()
@@ -149,7 +149,7 @@ def main():
         sys.exit(1)
 
     # Incremental update
-    embeddings, metadata = build_index(force=False)
+    embeddings, metadata = build_index(force=False, json_status=args.json_output)
 
     results = search(
         query=query,

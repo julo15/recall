@@ -54,7 +54,7 @@ def load_embeddings() -> np.ndarray | None:
     return None
 
 
-def build_index(force: bool = False) -> tuple[np.ndarray, list[HistoryEntry]]:
+def build_index(force: bool = False, json_status: bool = False) -> tuple[np.ndarray, list[HistoryEntry]]:
     """Build or incrementally update the index.
 
     Returns (embeddings, metadata).
@@ -83,10 +83,13 @@ def build_index(force: bool = False) -> tuple[np.ndarray, list[HistoryEntry]]:
     # Embed new entries
     if all_new:
         texts = [e.text for e in all_new]
-        print(f"Indexing {len(texts)} new entries...", file=sys.stderr)
+        if json_status:
+            print(json.dumps({"status": "indexing", "count": len(texts)}), file=sys.stderr)
+        else:
+            print(f"Indexing {len(texts)} new entries...", file=sys.stderr)
         new_emb = encode(
             texts,
-            show_progress_bar=len(texts) > 50,
+            show_progress_bar=not json_status and len(texts) > 50,
             batch_size=64,
         )
     else:
