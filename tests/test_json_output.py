@@ -111,3 +111,21 @@ def test_json_stdout_is_pure_json():
         f"Expected stdout to start with '[' (JSON array), "
         f"but got: {stripped[:80]!r}"
     )
+
+
+@recall_installed
+def test_json_mode_stderr_is_valid():
+    """When running in --json mode, any stderr JSON lines should be valid JSON with expected schema."""
+    result = _run_recall("--json", "-n", "1", "test")
+    assert result.returncode == 0, f"recall failed: {result.stderr}"
+
+    # Parse any JSON lines from stderr
+    for line in result.stderr.strip().splitlines():
+        line = line.strip()
+        if not line or not line.startswith("{"):
+            continue
+        data = json.loads(line)
+        assert "status" in data, f"stderr JSON missing 'status': {data}"
+        if data["status"] == "indexing":
+            assert isinstance(data.get("count"), int), f"indexing status missing int 'count': {data}"
+            assert data["count"] > 0, f"indexing count should be positive: {data}"
