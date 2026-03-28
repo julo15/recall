@@ -97,6 +97,24 @@ Seshctl and other tools integrate with recall via `recall --json`. This is a sta
 
 **Error**: Non-zero exit code. Stderr may contain error messages.
 
+### Stderr Status Lines
+
+In `--json` mode, stderr may contain structured JSON status lines alongside plain-text messages (e.g. `Rebuilding index from scratch...`). Consumers should filter for lines starting with `{` and parse as JSON; non-JSON lines can be safely ignored.
+
+**Schema**:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `status` | string | Status type. Currently only `"indexing"`. |
+| `count` | int | Number of entries being indexed. |
+
+**Example**:
+
+```
+Rebuilding index from scratch...
+{"status": "indexing", "count": 42}
+```
+
 ## Dependencies
 
 - `onnxruntime` + `tokenizers` — embedding model

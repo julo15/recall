@@ -129,3 +129,28 @@ def test_json_mode_stderr_is_valid():
         if data["status"] == "indexing":
             assert isinstance(data.get("count"), int), f"indexing status missing int 'count': {data}"
             assert data["count"] > 0, f"indexing count should be positive: {data}"
+
+
+@recall_installed
+def test_json_reindex_emits_indexing_status():
+    """Force a full reindex to guarantee the indexing status JSON appears on stderr."""
+    result = _run_recall("--reindex", "--json", "-n", "1", "test")
+    assert result.returncode == 0, f"recall failed: {result.stderr}"
+
+    # Find the indexing status line in stderr
+    found_indexing = False
+    for line in result.stderr.strip().splitlines():
+        line = line.strip()
+        if not line or not line.startswith("{"):
+            continue
+        data = json.loads(line)
+        if data.get("status") == "indexing":
+            assert isinstance(data["count"], int), f"count is not int: {data}"
+            assert data["count"] > 0, f"count should be positive: {data}"
+            found_indexing = True
+            break
+
+    assert found_indexing, (
+        f"Expected indexing status JSON on stderr during --reindex, "
+        f"but stderr was: {result.stderr[:200]!r}"
+    )

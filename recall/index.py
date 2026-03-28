@@ -89,7 +89,7 @@ def build_index(force: bool = False, json_status: bool = False) -> tuple[np.ndar
             print(f"Indexing {len(texts)} new entries...", file=sys.stderr)
         new_emb = encode(
             texts,
-            show_progress_bar=len(texts) > 50,
+            show_progress_bar=not json_status and len(texts) > 50,
             batch_size=64,
         )
     else:
