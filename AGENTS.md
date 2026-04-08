@@ -101,18 +101,23 @@ Seshctl and other tools integrate with recall via `recall --json`. This is a sta
 
 In `--json` mode, stderr may contain structured JSON status lines alongside plain-text messages (e.g. `Rebuilding index from scratch...`). Consumers should filter for lines starting with `{` and parse as JSON; non-JSON lines can be safely ignored.
 
-**Schema**:
+**Schema** (two line shapes):
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `status` | string | Status type. Currently only `"indexing"`. |
-| `count` | int | Number of entries being indexed. |
+| Line | Field | Type | Description |
+|------|-------|------|-------------|
+| Initial | `status` | string | `"indexing"` |
+| Initial | `count` | int | Number of entries being indexed. Emitted once when indexing starts. |
+| Progress | `status` | string | `"indexing"` |
+| Progress | `done` | int | Number of entries encoded so far. |
+| Progress | `total` | int | Total number of entries to encode. Emitted per batch during encoding. |
 
 **Example**:
 
 ```
 Rebuilding index from scratch...
 {"status": "indexing", "count": 42}
+{"status": "indexing", "done": 64, "total": 42}
+{"status": "indexing", "done": 42, "total": 42}
 ```
 
 ## Dependencies

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 import urllib.request
+from collections.abc import Callable
 from pathlib import Path
 
 import numpy as np
@@ -56,7 +57,7 @@ def encode(
     texts: list[str],
     batch_size: int = 64,
     show_progress_bar: bool = False,
-    progress_callback: callable | None = None,
+    progress_callback: Callable[[int, int], None] | None = None,
 ) -> np.ndarray:
     """Encode texts into embeddings. Drop-in replacement for SentenceTransformer.encode()."""
     session, tokenizer = _get_session()
