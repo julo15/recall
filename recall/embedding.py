@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 import urllib.request
+from collections.abc import Callable
 from pathlib import Path
 
 import numpy as np
@@ -56,6 +57,7 @@ def encode(
     texts: list[str],
     batch_size: int = 64,
     show_progress_bar: bool = False,
+    progress_callback: Callable[[int, int], None] | None = None,
 ) -> np.ndarray:
     """Encode texts into embeddings. Drop-in replacement for SentenceTransformer.encode()."""
     session, tokenizer = _get_session()
@@ -96,5 +98,8 @@ def encode(
         normalized = mean_pooled / norms
 
         all_embeddings.append(normalized.astype(np.float32))
+
+        if progress_callback is not None:
+            progress_callback(min(start + batch_size, len(texts)), len(texts))
 
     return np.vstack(all_embeddings)

@@ -127,28 +127,45 @@ def test_json_mode_stderr_is_valid():
         data = json.loads(line)
         assert "status" in data, f"stderr JSON missing 'status': {data}"
         if data["status"] == "indexing":
-            assert isinstance(data.get("count"), int), f"indexing status missing int 'count': {data}"
-            assert data["count"] > 0, f"indexing count should be positive: {data}"
+            if "count" in data:
+                # Initial line: {"status": "indexing", "count": N}
+                assert isinstance(data["count"], int), f"count is not int: {data}"
+                assert data["count"] > 0, f"count should be positive: {data}"
+            elif "done" in data and "total" in data:
+                # Progress line: {"status": "indexing", "done": N, "total": M}
+                assert isinstance(data["done"], int), f"done is not int: {data}"
+                assert isinstance(data["total"], int), f"total is not int: {data}"
+                assert data["done"] <= data["total"], f"done should be <= total: {data}"
+            else:
+                pytest.fail(f"indexing status has unexpected shape: {data}")
 
 
 @recall_installed
 def test_json_reindex_emits_indexing_status():
     """Force a full reindex to guarantee the indexing status JSON appears on stderr."""
-    result = _run_recall("--reindex", "--json", "-n", "1", "test")
-    assert result.returncode == 0, f"recall failed: {result.stderr}"
-
-    # Find the indexing status line in stderr
-    found_indexing = False
-    for line in result.stderr.strip().splitlines():
-        line = line.strip()
-        if not line or not line.startswith("{"):
-            continue
-        data = json.loads(line)
-        if data.get("status") == "indexing":
-            assert isinstance(data["count"], int), f"count is not int: {data}"
-            assert data["count"] > 0, f"count should be positive: {data}"
-            found_indexing = True
-            break
+    # Stream stderr line-by-line so we can stop as soon as we see the indexing
+    # status line, rather than waiting for the entire reindex to finish.
+    proc = subprocess.Popen(
+        [RECALL_BIN, "--reindex", "--json", "-n", "1", "test"],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+    )
+    try:
+        found_indexing = False
+        for line in proc.stderr:
+            line = line.strip()
+            if not line or not line.startswith("{"):
+                continue
+            data = json.loads(line)
+            if data.get("status") == "indexing" and "count" in data:
+                assert isinstance(data["count"], int), f"count is not int: {data}"
+                assert data["count"] > 0, f"count should be positive: {data}"
+                found_indexing = True
+                break
+    finally:
+        proc.terminate()
+        proc.wait(timeout=5)
 
     assert found_indexing, (
         f"Expected indexing status JSON on stderr during --reindex, "
