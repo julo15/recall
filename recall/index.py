@@ -84,13 +84,18 @@ def build_index(force: bool = False, json_status: bool = False) -> tuple[np.ndar
     if all_new:
         texts = [e.text for e in all_new]
         if json_status:
-            print(json.dumps({"status": "indexing", "count": len(texts)}), file=sys.stderr)
+            print(json.dumps({"status": "indexing", "count": len(texts)}), file=sys.stderr, flush=True)
         else:
             print(f"Indexing {len(texts)} new entries...", file=sys.stderr)
+
+        def on_progress(done, total):
+            print(json.dumps({"status": "indexing", "done": done, "total": total}), file=sys.stderr, flush=True)
+
         new_emb = encode(
             texts,
             show_progress_bar=not json_status and len(texts) > 50,
             batch_size=64,
+            progress_callback=on_progress if json_status else None,
         )
     else:
         new_emb = np.empty((0, 384), dtype=np.float32)
