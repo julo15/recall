@@ -30,57 +30,15 @@ def _strip_tags(text: str) -> str:
 
 
 def _decode_project_dir(dirname: str) -> str:
-    """Convert encoded directory name back to absolute path.
+    """Naive fallback: convert encoded directory name back to absolute path.
 
     Claude Code encodes paths by replacing ``/`` and ``.`` with ``-``.
-    Because literal hyphens in directory names are left unchanged, decoding
-    is ambiguous.  We resolve ambiguity by greedily matching against the
-    real filesystem: at each ``-`` we check whether treating it as a path
-    separator yields an existing directory.  If the path no longer exists
-    on disk we fall back to the naive ``replace("-", "/")``.
+    This is lossy — literal hyphens are indistinguishable from separators.
+    Used only as a fallback when transcript entries lack a ``cwd`` field.
     """
-    if not dirname.startswith("-"):
-        return dirname.replace("-", "/")
-
-    raw = dirname[1:]
-    tokens = raw.split("-")
-
-    # Pre-process: ``--`` in the encoded name represents a ``.``-prefixed
-    # directory (e.g. ``--cache`` → ``/.cache``).  After splitting on ``-``
-    # this shows up as an empty string followed by the segment name.
-    segments: list[str] = []
-    i = 0
-    while i < len(tokens):
-        if tokens[i] == "" and i + 1 < len(tokens):
-            segments.append("." + tokens[i + 1])
-            i += 2
-        else:
-            segments.append(tokens[i])
-            i += 1
-
-    if not segments:
-        return "/" + raw.replace("-", "/")
-
-    # Greedy left-to-right filesystem walk.
-    path = "/"
-    current = segments[0]
-
-    for seg in segments[1:]:
-        candidate = os.path.join(path, current)
-        if os.path.isdir(candidate):
-            path = candidate
-            current = seg
-        else:
-            current = current + "-" + seg
-
-    result = os.path.join(path, current)
-
-    # Fallback: if the very first component didn't resolve (e.g. path was
-    # deleted or we're in a CI/test environment), use the naive approach.
-    if path == "/" and not os.path.isdir(os.path.join("/", segments[0])):
-        return "/" + raw.replace("-", "/")
-
-    return result
+    if dirname.startswith("-"):
+        return "/" + dirname[1:].replace("-", "/")
+    return dirname.replace("-", "/")
 
 
 def _parse_iso_timestamp(ts: str) -> float:
@@ -206,7 +164,7 @@ class ClaudeAdapter:
                                     role="user",
                                     agent="claude",
                                     session_id=session_id,
-                                    project="",
+                                    project="",  # set after loop from cwd
                                     timestamp=timestamp,
                                 ))
 
@@ -220,7 +178,7 @@ class ClaudeAdapter:
                                     role="assistant",
                                     agent="claude",
                                     session_id=session_id,
-                                    project="",
+                                    project="",  # set after loop from cwd
                                     timestamp=timestamp,
                                 ))
 
