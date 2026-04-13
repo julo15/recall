@@ -151,7 +151,15 @@ class ClaudeAdapter:
 
         for transcript_path in self._find_transcript_files():
             file_key = str(transcript_path)
-            offset = file_cursors.get(file_key, 0)
+            file_cursor = file_cursors.get(file_key, 0)
+
+            # Support both old (bare int) and new (dict) cursor formats
+            if isinstance(file_cursor, dict):
+                offset = file_cursor.get("offset", 0)
+                cached_cwd = file_cursor.get("cwd")
+            else:
+                offset = file_cursor
+                cached_cwd = None
 
             try:
                 file_size = transcript_path.stat().st_size
@@ -161,9 +169,9 @@ class ClaudeAdapter:
             if offset >= file_size:
                 continue
 
-            # Derive project and session_id from path
-            project = _decode_project_dir(transcript_path.parent.name)
             session_id = transcript_path.stem
+            cwd = cached_cwd
+            file_entries: list[HistoryEntry] = []
 
             with open(transcript_path, "r") as f:
                 f.seek(offset)
@@ -180,6 +188,10 @@ class ClaudeAdapter:
                         )
                         continue
 
+                    # Grab cwd from the first entry that has it
+                    if cwd is None and "cwd" in data:
+                        cwd = data["cwd"]
+
                     entry_type = data.get("type")
                     message = data.get("message", {})
                     timestamp = _parse_iso_timestamp(data.get("timestamp", ""))
@@ -189,12 +201,12 @@ class ClaudeAdapter:
                         if text:
                             text = _strip_tags(text).strip()
                             if text:
-                                entries.append(HistoryEntry(
+                                file_entries.append(HistoryEntry(
                                     text=text,
                                     role="user",
                                     agent="claude",
                                     session_id=session_id,
-                                    project=project,
+                                    project="",
                                     timestamp=timestamp,
                                 ))
 
@@ -203,15 +215,23 @@ class ClaudeAdapter:
                         if text:
                             text = _strip_tags(text).strip()
                             if text:
-                                entries.append(HistoryEntry(
+                                file_entries.append(HistoryEntry(
                                     text=text,
                                     role="assistant",
                                     agent="claude",
                                     session_id=session_id,
-                                    project=project,
+                                    project="",
                                     timestamp=timestamp,
                                 ))
 
-                file_cursors[file_key] = f.tell()
+                new_offset = f.tell()
+
+            # Resolve project: prefer cwd from transcript, fall back to decode
+            project = cwd or _decode_project_dir(transcript_path.parent.name)
+            for entry in file_entries:
+                entry.project = project
+            entries.extend(file_entries)
+
+            file_cursors[file_key] = {"offset": new_offset, "cwd": cwd}
 
         return entries, file_cursors
